@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+
 # Create your models here.
 
 
@@ -9,7 +10,6 @@ class User(AbstractUser):
     balance = models.FloatField(default=0)
     email = models.EmailField(blank=True, max_length=254, verbose_name='email address', unique=True, editable=False)
     REQUIRED_FIELDS = [] # removes email from REQUIRED_FIELDS
-
 
 
 # Category Table
