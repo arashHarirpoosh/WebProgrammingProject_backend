@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate, login, logout
 
 from store_backend.serializers import ProductSerializer, CategorySerializer
 from rest_framework.parsers import JSONParser
+from django.core import serializers
 
 
 # Create your views here.
@@ -87,42 +88,101 @@ class SignUpPageView(View):
 class UserProfile(View):
     def post(self, request):
         body = json.loads(request.body.decode('utf-8'))
+        method = body['method']
         if request.user.is_authenticated:
-            if body['data'] == 'profile':
+            if method == 'getProfile':
                 resp = {
                     'first_name': request.user.first_name,
                     'last_name': request.user.last_name,
-                    'email': request.user.email,
+                    # 'email': request.user.email,
                     # 'password': request.user.password,
-                    'address': request.user.address
+                    'address': request.user.address,
+                    'balance': request.user.balance
                 }
                 return JsonResponse(resp)
 
-            elif body['data'] == 'receipts':
+            elif method == 'receipts':
                 return JsonResponse({})
+
+            elif method == 'changeBalance':
+                user = User.objects.filter(first_name=request.user.first_name).get()
+                user.balance += 10000
+                user.save()
+                return JsonResponse({'balance': user.balance})
+
+            elif method == 'edit':
+                user = User.objects.filter(first_name=request.user.first_name).get()
+                user.first_name = body['name']
+                user.last_name = body['familyName']
+                user.password = body['password']
+                user.address = body['address']
+                user.save()
+                print(body)
+                return JsonResponse({'result': True})
+
+
         return JsonResponse({})
 
 
 class AdminProfile(View):
     def post(self, request):
         # print(request.headers['x-token-access'])
+        # products = Product.objects.all()
+        # products_serializer = ProductSerializer(products, many=True)
+        # return JsonResponse(products_serializer.data, safe=False)
 
-        body = JSONParser().parse(request)
-        keys = list(body.keys())
-        if 'request' in keys:
-            products = Product.objects.all()
-            products_serializer = ProductSerializer(products, many=True)
-            return JsonResponse(products_serializer.data, safe=False)
-        elif 'productName' in keys:
-            oldName = body['productName']
-            body['productName'] = body['productName2']
-            del body['productName2']
-            print(body, oldName)
-            product = Product.objects.get(productName=oldName)
-            product_serializer = ProductSerializer(product, data=body)
-            if product_serializer.is_valid():
-                product_serializer.save()
-                return JsonResponse("Updated Successfully!", safe=False)
-            return JsonResponse("Updating Record Failed!", safe=False)
+        count = 0
+        product_data = JSONParser().parse(request)
+        print(request)
+        for p in product_data:
+            print(p)
+            products_serializer = ProductSerializer(data=p)
+            if products_serializer.is_valid():
+                products_serializer.save()
+                count += 1
+        if count == len(product_data):
+            return JsonResponse("Added Successfully! " + str(count), safe=False)
+        return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+
+        # count = 0
+        # category_data = JSONParser().parse(request)
+        # for p in category_data:
+        #     categories_serializer = CategorySerializer(data=p)
+        #     if categories_serializer.is_valid():
+        #         categories_serializer.save()
+        #         count += 1
+        # if count == len(category_data):
+        #     return JsonResponse("Added Successfully! " + str(count), safe=False)
+        # return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
 
 
+class SendProducts(View):
+    def get(self, request):
+        num_of_products = Product.objects.count()
+        return JsonResponse({'numProducts': num_of_products})
+
+    def post(self, request):
+        body = json.loads(request.body.decode('utf-8'))
+        method = body['method']
+        if method == 'pagination':
+            print(body)
+            page_num = body['pageNumber']
+            products = Product.objects.order_by(body['order'])[14 * (page_num - 1):14 * page_num]
+            products_array = json.loads(serializers.serialize('json', products))
+            resp = []
+            for p in products_array:
+                resp.append(p['fields'])
+            print(resp)
+            return JsonResponse({'products': resp})
+        elif method == 'search':
+            print(body)
+            search_res = Product.objects.filter(productName__contains=body['searchParam'])
+            products_array = json.loads(serializers.serialize('json', search_res))
+            resp = []
+            for p in products_array:
+                resp.append(p['fields'])
+            print(search_res)
+            print(resp)
+            return JsonResponse({'products': resp})
+
+        return JsonResponse({})
