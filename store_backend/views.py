@@ -105,21 +105,39 @@ class UserProfile(View):
                 return JsonResponse({})
 
             elif method == 'changeBalance':
-                user = User.objects.filter(first_name=request.user.first_name).get()
+                user = User.objects.filter(username=request.user.username).get()
                 user.balance += 10000
                 user.save()
                 return JsonResponse({'balance': user.balance})
 
             elif method == 'edit':
-                user = User.objects.filter(first_name=request.user.first_name).get()
-                user.first_name = body['name']
-                user.last_name = body['familyName']
-                user.password = body['password']
-                user.address = body['address']
-                user.save()
-                print(body)
-                return JsonResponse({'result': True})
+                user = User.objects.filter(username=request.user.username).get()
+                edited = False
+                if body['name'] is not '':
+                    user.first_name = body['name']
+                    edited = edited or True
 
+                if body['familyName'] is not '':
+                    user.last_name = body['familyName']
+                    edited = edited or True
+
+                if body['password'] is not '':
+                    user.set_password(body['password'])
+                    edited = edited or True
+
+                if body['address'] is not '':
+                    user.address = body['address']
+                    edited = edited or True
+                if edited:
+                    user.save()
+                print(body)
+                resp = {
+                    'result': True,
+                    'first_name': request.user.first_name,
+                    'last_name': request.user.last_name,
+                    'address': request.user.address,
+                }
+                return JsonResponse(resp)
 
         return JsonResponse({})
 
