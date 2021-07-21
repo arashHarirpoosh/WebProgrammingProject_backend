@@ -7,4 +7,5 @@ urlpatterns = [
     path('login', csrf_exempt(views.LogInPageView.as_view())),
     path('logout', csrf_exempt(views.user_logout)),
     path('signup', csrf_exempt(views.SignUpPageView.as_view())),
+    path('userprofile', csrf_exempt(views.UserProfile.as_view())),
 ]

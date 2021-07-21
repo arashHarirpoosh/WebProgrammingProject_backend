@@ -71,11 +71,30 @@ class SignUpPageView(View):
             # user.password = body['password']
             # user.save()
             user = User.objects.create(first_name=body['name'], last_name=body['familyName'], username=body['email'],
-                                password=body['password'], address=body['address'], email=body['email']
-                                )
+                                       password=body['password'], address=body['address'], email=body['email']
+                                       )
             user.set_password(body['password'])
             user.save()
 
             return JsonResponse({'result': True})
 
         return JsonResponse({'result': False})
+
+
+class UserProfile(View):
+    def post(self, request):
+        body = json.loads(request.body.decode('utf-8'))
+        if request.user.is_authenticated:
+            if body['data'] == 'profile':
+                resp = {
+                    'first_name': request.user.first_name,
+                    'last_name': request.user.last_name,
+                    'email': request.user.email,
+                    # 'password': request.user.password,
+                    'address': request.user.address
+                }
+                return JsonResponse(resp)
+
+            elif body['data'] == 'receipts':
+                return JsonResponse({})
+        return JsonResponse({})
