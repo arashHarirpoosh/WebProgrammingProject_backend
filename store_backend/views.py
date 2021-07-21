@@ -88,19 +88,39 @@ class SignUpPageView(View):
 class UserProfile(View):
     def post(self, request):
         body = json.loads(request.body.decode('utf-8'))
+        method = body['method']
         if request.user.is_authenticated:
-            if body['data'] == 'profile':
+            if method == 'getProfile':
                 resp = {
                     'first_name': request.user.first_name,
                     'last_name': request.user.last_name,
-                    'email': request.user.email,
+                    # 'email': request.user.email,
                     # 'password': request.user.password,
-                    'address': request.user.address
+                    'address': request.user.address,
+                    'balance': request.user.balance
                 }
                 return JsonResponse(resp)
 
-            elif body['data'] == 'receipts':
+            elif method == 'receipts':
                 return JsonResponse({})
+
+            elif method == 'changeBalance':
+                user = User.objects.filter(first_name=request.user.first_name).get()
+                user.balance += 10000
+                user.save()
+                return JsonResponse({'balance': user.balance})
+
+            elif method == 'edit':
+                user = User.objects.filter(first_name=request.user.first_name).get()
+                user.first_name = body['name']
+                user.last_name = body['familyName']
+                user.password = body['password']
+                user.address = body['address']
+                user.save()
+                print(body)
+                return JsonResponse({'result': True})
+
+
         return JsonResponse({})
 
 
@@ -143,12 +163,26 @@ class SendProducts(View):
 
     def post(self, request):
         body = json.loads(request.body.decode('utf-8'))
-        print(body)
-        page_num = body['pageNumber']
-        products = Product.objects.order_by(body['order'])[14 * (page_num - 1):14 * page_num]
-        products_array = json.loads(serializers.serialize('json', products))
-        resp = []
-        for p in products_array:
-            resp.append(p['fields'])
-        print(resp)
-        return JsonResponse({'products': resp})
+        method = body['method']
+        if method == 'pagination':
+            print(body)
+            page_num = body['pageNumber']
+            products = Product.objects.order_by(body['order'])[14 * (page_num - 1):14 * page_num]
+            products_array = json.loads(serializers.serialize('json', products))
+            resp = []
+            for p in products_array:
+                resp.append(p['fields'])
+            print(resp)
+            return JsonResponse({'products': resp})
+        elif method == 'search':
+            print(body)
+            search_res = Product.objects.filter(productName__contains=body['searchParam'])
+            products_array = json.loads(serializers.serialize('json', search_res))
+            resp = []
+            for p in products_array:
+                resp.append(p['fields'])
+            print(search_res)
+            print(resp)
+            return JsonResponse({'products': resp})
+
+        return JsonResponse({})
