@@ -106,30 +106,23 @@ class UserProfile(View):
 class AdminProfile(View):
     def post(self, request):
         # print(request.headers['x-token-access'])
-        # products = Product.objects.all()
-        # products_serializer = ProductSerializer(products, many=True)
-        # return JsonResponse(products_serializer.data, safe=False)
 
-        count = 0
-        product_data = JSONParser().parse(request)
-        print(request)
-        for p in product_data:
-            print(p)
-            products_serializer = ProductSerializer(data=p)
-            if products_serializer.is_valid():
-                products_serializer.save()
-                count += 1
-        if count == len(product_data):
-            return JsonResponse("Added Successfully! " + str(count), safe=False)
-        return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+        body = JSONParser().parse(request)
+        keys = list(body.keys())
+        if 'request' in keys:
+            products = Product.objects.all()
+            products_serializer = ProductSerializer(products, many=True)
+            return JsonResponse(products_serializer.data, safe=False)
+        elif 'productName' in keys:
+            oldName = body['productName']
+            body['productName'] = body['productName2']
+            del body['productName2']
+            print(body, oldName)
+            product = Product.objects.get(productName=oldName)
+            product_serializer = ProductSerializer(product, data=body)
+            if product_serializer.is_valid():
+                product_serializer.save()
+                return JsonResponse("Updated Successfully!", safe=False)
+            return JsonResponse("Updating Record Failed!", safe=False)
 
-        # count = 0
-        # category_data = JSONParser().parse(request)
-        # for p in category_data:
-        #     categories_serializer = CategorySerializer(data=p)
-        #     if categories_serializer.is_valid():
-        #         categories_serializer.save()
-        #         count += 1
-        # if count == len(category_data):
-        #     return JsonResponse("Added Successfully! " + str(count), safe=False)
-        # return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+
