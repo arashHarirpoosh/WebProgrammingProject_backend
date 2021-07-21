@@ -14,17 +14,17 @@ class User(AbstractUser):
 
 # Category Table
 class Category(models.Model):
-    categoryName = models.CharField(default='دسته بندی نشده', max_length=512, unique=True, blank=False)
+    category = models.CharField(default='دسته بندی نشده', max_length=512, unique=True, blank=False)
 
 
 def default_category():
-    return Category.objects.get_or_create(categoryName='دسته بندی نشده')
+    return Category.objects.get_or_create(category='دسته بندی نشده')
 
 
 # Product table
 class Product(models.Model):
     productName = models.CharField(max_length=512)
-    productCategory = models.ForeignKey(Category, on_delete=models.SET_DEFAULT, default='دسته بندی نشده')
+    category = models.CharField(default='دسته بندی نشده', max_length=512)
     price = models.IntegerField()
     numberOfProducts = models.IntegerField()
     numberOfPurchased = models.IntegerField()

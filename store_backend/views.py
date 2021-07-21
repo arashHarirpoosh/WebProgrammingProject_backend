@@ -1,11 +1,14 @@
 # from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import User
+from .models import User, Product, Category
 from django.views.generic import View
 from django.http import JsonResponse
 import json
 from django.contrib.auth import authenticate, login, logout
+
+from store_backend.serializers import ProductSerializer, CategorySerializer
+from rest_framework.parsers import JSONParser
 
 
 # Create your views here.
@@ -98,3 +101,35 @@ class UserProfile(View):
             elif body['data'] == 'receipts':
                 return JsonResponse({})
         return JsonResponse({})
+
+
+class AdminProfile(View):
+    def post(self, request):
+        # print(request.headers['x-token-access'])
+        # products = Product.objects.all()
+        # products_serializer = ProductSerializer(products, many=True)
+        # return JsonResponse(products_serializer.data, safe=False)
+
+        count = 0
+        product_data = JSONParser().parse(request)
+        print(request)
+        for p in product_data:
+            print(p)
+            products_serializer = ProductSerializer(data=p)
+            if products_serializer.is_valid():
+                products_serializer.save()
+                count += 1
+        if count == len(product_data):
+            return JsonResponse("Added Successfully! " + str(count), safe=False)
+        return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+
+        # count = 0
+        # category_data = JSONParser().parse(request)
+        # for p in category_data:
+        #     categories_serializer = CategorySerializer(data=p)
+        #     if categories_serializer.is_valid():
+        #         categories_serializer.save()
+        #         count += 1
+        # if count == len(category_data):
+        #     return JsonResponse("Added Successfully! " + str(count), safe=False)
+        # return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
