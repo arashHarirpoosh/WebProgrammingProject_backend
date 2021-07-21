@@ -1,4 +1,6 @@
 # from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
 from .models import User
 from django.views.generic import View
 from django.http import JsonResponse
@@ -11,9 +13,27 @@ def sample(request):
     return JsonResponse({1: 'hi'})
 
 
+@csrf_exempt
+def user_logout(request):
+    print('logout')
+    if request.user.is_authenticated:
+        logout(request)
+        return JsonResponse({'logout': True})
+    return JsonResponse({'logout': False})
+
+
 class LogInPageView(View):
     def get(self, request):
-        return JsonResponse({1: 'hi'})
+        print(request.headers)
+        print(request.user.is_authenticated)
+        if request.user.is_authenticated:
+            return JsonResponse({
+                'signIn': True,
+                'name': request.user.first_name
+            })
+        return JsonResponse({
+            'signIn': False
+        })
 
     def post(self, request):
         body = json.loads(request.body.decode('utf-8'))
@@ -26,6 +46,7 @@ class LogInPageView(View):
         print(user)
         if user is not None:
             login(request, user)
+            print(request.user.is_authenticated)
             user_info = User.objects.get(username=user_name)
             return JsonResponse({'validation': True,
                                  'name': user_info.first_name
