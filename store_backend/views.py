@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate, login, logout
 
 from store_backend.serializers import ProductSerializer, CategorySerializer
 from rest_framework.parsers import JSONParser
+from django.core import serializers
 
 
 # Create your views here.
@@ -133,3 +134,21 @@ class AdminProfile(View):
         # if count == len(category_data):
         #     return JsonResponse("Added Successfully! " + str(count), safe=False)
         # return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+
+
+class SendProducts(View):
+    def get(self, request):
+        num_of_products = Product.objects.count()
+        return JsonResponse({'numProducts': num_of_products})
+
+    def post(self, request):
+        body = json.loads(request.body.decode('utf-8'))
+        print(body)
+        page_num = body['pageNumber']
+        products = Product.objects.order_by(body['order'])[14 * (page_num - 1):14 * page_num]
+        products_array = json.loads(serializers.serialize('json', products))
+        resp = []
+        for p in products_array:
+            resp.append(p['fields'])
+        print(resp)
+        return JsonResponse({'products': resp})
