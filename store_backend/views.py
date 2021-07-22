@@ -179,6 +179,60 @@ class AdminProfile(View):
             categories_serializer = CategorySerializer(categories, many=True)
             return JsonResponse(categories_serializer.data, safe=False)
 
+        elif 'removeCategory' in keys:
+            del body['removeCategory']
+            pros = Product.objects.filter(category=body['category'])
+            products_serializer = ProductSerializer(pros, many=True)
+
+            i = 0
+            msg = ""
+            for p in products_serializer.data:
+                p['category'] = 'دسته بندی نشده'
+                p = dict(p)
+                product_serializer = ProductSerializer(pros[i], data=p)
+                if product_serializer.is_valid():
+                    product_serializer.save()
+                    msg += p['productName'] + "category changed!"
+                i += 1
+
+            product = Category.objects.get(category=body['category'])
+            product.delete()
+            return JsonResponse("Deleted Successfully!\n" + msg, safe=False)
+
+        elif 'editCategory' in keys:
+            del body['editCategory']
+            tmp_dict = {}
+            tmp_dict.update({'category': body['category2']})
+            category_serializer = CategorySerializer(data=tmp_dict)
+            if category_serializer.is_valid():
+                category_serializer.save()
+
+            pros = Product.objects.filter(category=body['category'])
+            products_serializer = ProductSerializer(pros, many=True)
+
+            i = 0
+            msg = ""
+            for p in products_serializer.data:
+                p['category'] = body['category2']
+                p = dict(p)
+                product_serializer = ProductSerializer(pros[i], data=p)
+                if product_serializer.is_valid():
+                    product_serializer.save()
+                    msg += p['productName'] + "category changed!"
+                i += 1
+
+            product = Category.objects.get(category=body['category'])
+            product.delete()
+            return JsonResponse("Deleted Successfully!\n", safe=False)
+
+        elif 'createCategory' in keys:
+            del body['createCategory']
+            category_serializer = CategorySerializer(data=body)
+            if category_serializer.is_valid():
+                category_serializer.save()
+                return JsonResponse("Added Successfully!", safe=False)
+            return JsonResponse("Failed to Add!", safe=False)
+
 
 class SendProducts(View):
     def get(self, request):
