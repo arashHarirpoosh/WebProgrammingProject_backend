@@ -234,7 +234,7 @@ class AdminProfile(View):
             return JsonResponse("Failed to Add!", safe=False)
 
         elif 'receipts_req' in keys:
-            receipts = Receipt.objects.values('name')
+            receipts = Receipt.objects.values('trackingCode', 'productName', 'totalPrice', 'name', 'address')
             # receipts_serializer = json.loads(serializers.serialize('json', receipts))
             print(receipts)
             receipts = list(receipts)
