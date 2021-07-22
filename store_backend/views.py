@@ -236,10 +236,16 @@ class AdminProfile(View):
         elif 'receipts_req' in keys:
             receipts = Receipt.objects.values('trackingCode', 'productName', 'totalPrice', 'name', 'address')
             # receipts_serializer = json.loads(serializers.serialize('json', receipts))
-            print(receipts)
+            # print(receipts)
             receipts = list(receipts)
             # receipts_serializer = ReceiptSerializer(receipts[0], many=True)
             # receipts_serializer = json.loads(serializers.serialize('json', receipts))
+            return JsonResponse(receipts, safe=False)
+
+        elif 'receipts_search' in keys:
+            rec = Receipt.objects.filter(trackingCode=body['trackingCode'])
+            receipts = rec.values('trackingCode', 'productName', 'totalPrice', 'name', 'address')
+            receipts = list(receipts)
             return JsonResponse(receipts, safe=False)
 
 
