@@ -1,13 +1,13 @@
 # from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import User, Product, Category
+from .models import User, Product, Category, Receipt
 from django.views.generic import View
 from django.http import JsonResponse
 import json
 from django.contrib.auth import authenticate, login, logout
 
-from store_backend.serializers import ProductSerializer, CategorySerializer
+from store_backend.serializers import ProductSerializer, CategorySerializer, ReceiptSerializer
 from rest_framework.parsers import JSONParser
 from django.core import serializers
 
@@ -113,19 +113,19 @@ class UserProfile(View):
             elif method == 'edit':
                 user = User.objects.filter(username=request.user.username).get()
                 edited = False
-                if body['name'] is not '':
+                if body['name'] != '':
                     user.first_name = body['name']
                     edited = edited or True
 
-                if body['familyName'] is not '':
+                if body['familyName'] != '':
                     user.last_name = body['familyName']
                     edited = edited or True
 
-                if body['password'] is not '':
+                if body['password'] != '':
                     user.set_password(body['password'])
                     edited = edited or True
 
-                if body['address'] is not '':
+                if body['address'] != '':
                     user.address = body['address']
                     edited = edited or True
                 if edited:
@@ -232,6 +232,15 @@ class AdminProfile(View):
                 category_serializer.save()
                 return JsonResponse("Added Successfully!", safe=False)
             return JsonResponse("Failed to Add!", safe=False)
+
+        elif 'receipts_req' in keys:
+            receipts = Receipt.objects.values('name')
+            # receipts_serializer = json.loads(serializers.serialize('json', receipts))
+            print(receipts)
+            receipts = list(receipts)
+            # receipts_serializer = ReceiptSerializer(receipts[0], many=True)
+            # receipts_serializer = json.loads(serializers.serialize('json', receipts))
+            return JsonResponse(receipts, safe=False)
 
 
 class SendProducts(View):

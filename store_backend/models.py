@@ -32,7 +32,7 @@ class Product(models.Model):
 
 # Receipt table
 class Receipt(models.Model):
-    productName = models.ForeignKey(Product, on_delete=models.DO_NOTHING)
+    productName = models.CharField(max_length=512)
     numOfPurchase = models.IntegerField()
     name = models.CharField(max_length=512)
     familyName = models.CharField(max_length=512)
