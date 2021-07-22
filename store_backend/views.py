@@ -1,13 +1,13 @@
 # from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import User, Product, Category
+from .models import User, Product, Category, Receipt
 from django.views.generic import View
 from django.http import JsonResponse
 import json
 from django.contrib.auth import authenticate, login, logout
 
-from store_backend.serializers import ProductSerializer, CategorySerializer
+from store_backend.serializers import ProductSerializer, CategorySerializer, ReceiptSerializer
 from rest_framework.parsers import JSONParser
 from django.core import serializers
 
@@ -113,19 +113,19 @@ class UserProfile(View):
             elif method == 'edit':
                 user = User.objects.filter(username=request.user.username).get()
                 edited = False
-                if body['name'] is not '':
+                if body['name'] != '':
                     user.first_name = body['name']
                     edited = edited or True
 
-                if body['familyName'] is not '':
+                if body['familyName'] != '':
                     user.last_name = body['familyName']
                     edited = edited or True
 
-                if body['password'] is not '':
+                if body['password'] != '':
                     user.set_password(body['password'])
                     edited = edited or True
 
-                if body['address'] is not '':
+                if body['address'] != '':
                     user.address = body['address']
                     edited = edited or True
                 if edited:
@@ -145,33 +145,102 @@ class UserProfile(View):
 class AdminProfile(View):
     def post(self, request):
         # print(request.headers['x-token-access'])
-        # products = Product.objects.all()
-        # products_serializer = ProductSerializer(products, many=True)
-        # return JsonResponse(products_serializer.data, safe=False)
 
-        count = 0
-        product_data = JSONParser().parse(request)
-        print(request)
-        for p in product_data:
-            print(p)
-            products_serializer = ProductSerializer(data=p)
-            if products_serializer.is_valid():
-                products_serializer.save()
-                count += 1
-        if count == len(product_data):
-            return JsonResponse("Added Successfully! " + str(count), safe=False)
-        return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+        body = JSONParser().parse(request)
+        keys = list(body.keys())
+        if 'request' in keys:
+            products = Product.objects.all()
+            products_serializer = ProductSerializer(products, many=True)
+            return JsonResponse(products_serializer.data, safe=False)
+        elif 'editPro' in keys:
+            del body['editPro']
+            oldName = body['productName']
+            body['productName'] = body['productName2']
+            del body['productName2']
+            print(body, oldName)
+            product = Product.objects.get(productName=oldName)
+            product_serializer = ProductSerializer(product, data=body)
+            if product_serializer.is_valid():
+                product_serializer.save()
+                return JsonResponse("Updated Successfully!", safe=False)
+            return JsonResponse("Updating Record Failed!", safe=False)
 
-        # count = 0
-        # category_data = JSONParser().parse(request)
-        # for p in category_data:
-        #     categories_serializer = CategorySerializer(data=p)
-        #     if categories_serializer.is_valid():
-        #         categories_serializer.save()
-        #         count += 1
-        # if count == len(category_data):
-        #     return JsonResponse("Added Successfully! " + str(count), safe=False)
-        # return JsonResponse("Failed to Add!, Num of failed records: " + str(count), safe=False)
+        elif 'createPro' in keys:
+            del body['createPro']
+            body_serializer = ProductSerializer(data=body)
+            if body_serializer.is_valid():
+                body_serializer.save()
+                return JsonResponse("Added Successfully!", safe=False)
+            return JsonResponse("Failed to Add!", safe=False)
+
+        elif 'categories' in keys:
+            del body['categories']
+            categories = Category.objects.all()
+            categories_serializer = CategorySerializer(categories, many=True)
+            return JsonResponse(categories_serializer.data, safe=False)
+
+        elif 'removeCategory' in keys:
+            del body['removeCategory']
+            pros = Product.objects.filter(category=body['category'])
+            products_serializer = ProductSerializer(pros, many=True)
+
+            i = 0
+            msg = ""
+            for p in products_serializer.data:
+                p['category'] = 'دسته بندی نشده'
+                p = dict(p)
+                product_serializer = ProductSerializer(pros[i], data=p)
+                if product_serializer.is_valid():
+                    product_serializer.save()
+                    msg += p['productName'] + "category changed!"
+                i += 1
+
+            product = Category.objects.get(category=body['category'])
+            product.delete()
+            return JsonResponse("Deleted Successfully!\n" + msg, safe=False)
+
+        elif 'editCategory' in keys:
+            del body['editCategory']
+            tmp_dict = {}
+            tmp_dict.update({'category': body['category2']})
+            category_serializer = CategorySerializer(data=tmp_dict)
+            if category_serializer.is_valid():
+                category_serializer.save()
+
+            pros = Product.objects.filter(category=body['category'])
+            products_serializer = ProductSerializer(pros, many=True)
+
+            i = 0
+            msg = ""
+            for p in products_serializer.data:
+                p['category'] = body['category2']
+                p = dict(p)
+                product_serializer = ProductSerializer(pros[i], data=p)
+                if product_serializer.is_valid():
+                    product_serializer.save()
+                    msg += p['productName'] + "category changed!"
+                i += 1
+
+            product = Category.objects.get(category=body['category'])
+            product.delete()
+            return JsonResponse("Deleted Successfully!\n", safe=False)
+
+        elif 'createCategory' in keys:
+            del body['createCategory']
+            category_serializer = CategorySerializer(data=body)
+            if category_serializer.is_valid():
+                category_serializer.save()
+                return JsonResponse("Added Successfully!", safe=False)
+            return JsonResponse("Failed to Add!", safe=False)
+
+        elif 'receipts_req' in keys:
+            receipts = Receipt.objects.values('name')
+            # receipts_serializer = json.loads(serializers.serialize('json', receipts))
+            print(receipts)
+            receipts = list(receipts)
+            # receipts_serializer = ReceiptSerializer(receipts[0], many=True)
+            # receipts_serializer = json.loads(serializers.serialize('json', receipts))
+            return JsonResponse(receipts, safe=False)
 
 
 class SendProducts(View):
